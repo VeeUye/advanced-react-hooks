@@ -6,20 +6,25 @@ import {useReducer} from 'react'
 
 
 const countReducer = (state, action) => { //action is the value that's passed to the dispqtch function
-  // set state with either a function callback or an object
-  return  {
-    ...state,
-    ...(typeof action === 'function' ? action(state) : action),
+switch(action.type) {
+  case 'INCREMENT': {
+    return {
+      count: state.count + action.step
+    }
   }
+  default: {
+    throw new Error (`Unsupported action type: ${action.type} `)
+  }
+}
+
 }
   function Counter({initialCount = 0, step = 1}) {
 
-    const [state, setState] = useReducer(countReducer, {count: initialCount})
+    const [state, dispatch] = useReducer(countReducer, {count: initialCount})
     const { count } = state
 
-    const increment = () =>
-        //setState is the dispatch function
-        setState(currentState => ({count: currentState.count + step}))
+    const increment = () => dispatch({type: 'INCREMENT', step})
+
 
   return <button onClick={increment}>{count}</button>
 }
