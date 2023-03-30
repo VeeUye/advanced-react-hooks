@@ -2,6 +2,8 @@
 // http://localhost:3000/isolated/exercise/02.js
 
 import * as React from 'react'
+import {useCallback} from 'react'
+
 import {
   fetchPokemon,
   PokemonForm,
@@ -10,7 +12,6 @@ import {
   PokemonErrorBoundary,
 } from '../pokemon'
 
-// 🐨 this is going to be our generic asyncReducer
 function asyncReducer(state, action) {
   switch (action.type) {
     case 'pending': {
@@ -28,7 +29,8 @@ function asyncReducer(state, action) {
   }
 }
 
-const useAsync = (asyncCallback, initialState, dependencies) => {
+// removed dependencies as an arg to useAsync
+const useAsync = (asyncCallback, initialState) => {
   const [state, dispatch] = React.useReducer(asyncReducer, {
     status:  'idle',
     data: null,
@@ -51,23 +53,29 @@ const useAsync = (asyncCallback, initialState, dependencies) => {
           dispatch({type: 'rejected', error})
         },
     )
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies)
+// added asyncCallback as a dependency
+  }, [asyncCallback])
   return state
 }
 
 
 function PokemonInfo({pokemonName}) {
 
-
-  // 🐨 here's how you'll use the new useAsync hook you're writing:
-  const state = useAsync(() => {
+  // wrapped asynCallback in useCallback with pokemonName as a dependency
+  const asyncCallback = useCallback(() => {
     if (!pokemonName) {
       return
     }
     return fetchPokemon(pokemonName)
-  }, { status: pokemonName ? 'pending' : 'idle'  }, [pokemonName])
+  }, [pokemonName])
+
+
+
+  // 🐨 here's how you'll use the new useAsync hook you're writing:
+  const state = useAsync( asyncCallback,
+      { status: pokemonName ? 'pending' : 'idle'  }
+      )
+
   const {data: pokemon, status, error} = state
 
   switch (status) {
