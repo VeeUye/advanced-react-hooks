@@ -1,18 +1,16 @@
 // useDebugValue: useMedia
 // http://localhost:3000/isolated/exercise/06.js
 
-import * as React from 'react'
-import {useDebugValue} from 'react'
+import React, {useDebugValue, useEffect, useState} from 'react'
 
 function useMedia(query, initialState = false) {
-  const [state, setState] = React.useState(initialState)
+  const [state, setState] = useState(initialState)
 
-  // 🐨 call React.useDebugValue here.
-  // 💰 here's the formatted label I use: `\`${query}\` => ${state}`
+  const formatUseMediaDebugValue = ({query, state}) => `\`${query}\` => ${state}`
 
-  useDebugValue(`\`${query}\` => ${state}`)
+  useDebugValue({query, state}, formatUseMediaDebugValue)
 
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true
     const mql = window.matchMedia(query)
     function onChange() {
