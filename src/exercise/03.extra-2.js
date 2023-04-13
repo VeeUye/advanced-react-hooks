@@ -2,10 +2,9 @@
 // 💯 caching in a context provider (exercise)
 // http://localhost:3000/isolated/exercise/03.extra-2.js
 
-// you can edit this here and look at the isolated page or you can copy/paste
-// this in the regular exercise file.
 
-import * as React from 'react'
+
+import React, {createContext, useContext, useEffect, useReducer} from 'react'
 import {
   fetchPokemon,
   PokemonForm,
@@ -16,13 +15,7 @@ import {
 import {useAsync} from '../utils'
 
 // 🐨 Create a PokemonCacheContext
-
-// 🐨 create a PokemonCacheProvider function
-// 🐨 useReducer with pokemonCacheReducer in your PokemonCacheProvider
-// 💰 you can grab the one that's in PokemonInfo
-// 🐨 return your context provider with the value assigned to what you get back from useReducer
-// 💰 value={[cache, dispatch]}
-// 💰 make sure you forward the props.children!
+const PokemonCacheContext = createContext()
 
 function pokemonCacheReducer(state, action) {
   switch (action.type) {
@@ -35,14 +28,34 @@ function pokemonCacheReducer(state, action) {
   }
 }
 
-function PokemonInfo({pokemonName}) {
-  // 💣 remove the useReducer here (or move it up to your PokemonCacheProvider)
-  const [cache, dispatch] = React.useReducer(pokemonCacheReducer, {})
+// 🐨 create a PokemonCacheProvider function
+function PokemonCacheProvider(props) {
+  // 🐨 useReducer with pokemonCacheReducer in your PokemonCacheProvider
+  // 💰 you can grab the one that's in PokemonInfo
+  const [cache, dispatch] = useReducer(pokemonCacheReducer, {})
+  // 🐨 return your context provider with the value assigned to what you get back from useReducer
+  // 💰 value={[cache, dispatch]}
+  // 💰 make sure you forward the props.children!
+  return <PokemonCacheContext.Provider value={[cache, dispatch]} {...props}/>
+}
+
+function usePokemonCache() {
+  const context = useContext(PokemonCacheContext)
+  if(!context) {
+    throw new Error(
+        'usePokemonCache must be used within a PokemonCacheProvider'
+    )
+  }
+  return context
+}
+
+function PokemonInfo({pokemonName: externalPokemonName}) {
   // 🐨 get the cache and dispatch from useContext with PokemonCacheContext
+  const [cache, dispatch] = usePokemonCache()
+  const pokemonName = externalPokemonName?.toLowerCase()
+  const {data: pokemon, status, error, run, setData} = useAsync({status: pokemonName ? 'pending' : 'idle'})
 
-  const {data: pokemon, status, error, run, setData} = useAsync()
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (!pokemonName) {
       return
     } else if (cache[pokemonName]) {
@@ -55,7 +68,7 @@ function PokemonInfo({pokemonName}) {
         }),
       )
     }
-  }, [cache, pokemonName, run, setData])
+  }, [cache, dispatch, pokemonName, run, setData])
 
   if (status === 'idle') {
     return 'Submit a pokemon'
@@ -70,7 +83,7 @@ function PokemonInfo({pokemonName}) {
 
 function PreviousPokemon({onSelect}) {
   // 🐨 get the cache from useContext with PokemonCacheContext
-  const cache = {}
+  const [cache] = usePokemonCache()
   return (
     <div>
       Previous Pokemon
@@ -94,17 +107,19 @@ function PokemonSection({onSelect, pokemonName}) {
   // 🐨 wrap this in the PokemonCacheProvider so the PreviousPokemon
   // and PokemonInfo components have access to that context.
   return (
-    <div style={{display: 'flex'}}>
-      <PreviousPokemon onSelect={onSelect} />
-      <div className="pokemon-info" style={{marginLeft: 10}}>
-        <PokemonErrorBoundary
-          onReset={() => onSelect('')}
-          resetKeys={[pokemonName]}
-        >
-          <PokemonInfo pokemonName={pokemonName} />
-        </PokemonErrorBoundary>
-      </div>
-    </div>
+      <PokemonCacheProvider>
+        <div style={{display: 'flex'}}>
+         <PreviousPokemon onSelect={onSelect} />
+         <div className="pokemon-info" style={{marginLeft: 10}}>
+            <PokemonErrorBoundary
+              onReset={() => onSelect('')}
+              resetKeys={[pokemonName]}
+             >
+             <PokemonInfo pokemonName={pokemonName} />
+           </PokemonErrorBoundary>
+         </div>
+        </div>
+      </PokemonCacheProvider>
   )
 }
 
